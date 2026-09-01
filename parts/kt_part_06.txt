@@ -1,0 +1,24 @@
+te();
+ const ms=Math.max(0,dep-now);
+ const d=Math.floor(ms/86400000);
+ const h=Math.floor((ms%86400000)/3600000);
+ document.getElementById('countdown').textContent=`${d} 天 ${h} 小时`;
+
+ const shotDone=camera.filter((x,i)=>localStorage.getItem('cam'+i)==='1').length;
+ document.getElementById('shotCount').textContent=`${shotDone}/${camera.length}`;
+
+ const dayDone=route.filter((x,i)=>localStorage.getItem('day'+i)==='1').length;
+ document.getElementById('dayProgressText').textContent=`${dayDone}/8`;
+
+ const prepIds=[...camera.map((_,i)=>'cam'+i),...checks.map((_,i)=>'check'+i),...stays.map((_,i)=>'stay'+i)];
+ const prepDone=prepIds.filter(id=>localStorage.getItem(id)==='1').length;
+ const pct=Math.round(prepDone/prepIds.length*100);
+ document.getElementById('overallPct').textContent=pct+'%';
+ document.getElementById('overallBar').style.width=pct+'%';
+}
+updateBudgetView();
+if(document.getElementById('fxRateInput')) document.getElementById('fxRateInput').value=getFxRate();
+updateDashboard();
+</script>
+</body>
+</html>
