@@ -1,0 +1,138 @@
+kground:var(--pink);color:white;border:0;border-radius:10px;padding:10px 14px;
+  font-weight:800;margin-top:8px;
+}
+.listLine{padding:10px 0;border-bottom:1px dashed #f1d2df}.listLine:last-child{border-bottom:0}
+.money{font-weight:900;color:#bd3d72}
+.footer{
+  position:fixed;bottom:0;left:0;right:0;padding:9px 14px max(9px,env(safe-area-inset-bottom));
+  background:rgba(255,247,251,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  font-size:10px;color:var(--muted);text-align:center;
+}
+
+.dayDetails{margin-top:10px;border-top:1px dashed #f0bfd3;padding-top:8px}
+.dayToggle{width:100%;border:1px solid #f3bfd5;background:#fff6fa;color:#a93d6b;border-radius:10px;padding:9px 10px;font-weight:800;text-align:left;cursor:pointer}
+.dayTimeline{display:none;margin-top:8px}
+.dayTimeline.open{display:block}
+.timeSlot{display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed #f5d8e4}
+.timeSlot:last-child{border-bottom:0}
+.timeSlot .clock{font-size:11px;font-weight:900;color:var(--pink)}
+.timeSlot .what{font-size:12px;color:var(--text);line-height:1.5}.heartCheck{width:24px;height:24px;border:1px solid #f0a8c7;background:#fff6fa;border-radius:50%;cursor:pointer;font-size:14px;line-height:20px;text-align:center;padding:0;color:#c78aa4}.heartCheck.loved{background:#ff5c9b;border-color:#ff5c9b;color:white}.timeSlot.completed .what{text-decoration:line-through;opacity:.55}.timeSlot.completed .clock{opacity:.55}
+.fxBox{background:linear-gradient(135deg,#fff,#fff0f7);border:1px solid #f5bfd6;border-radius:16px;padding:14px;margin-bottom:10px}
+.fxRate{font-size:26px;font-weight:900;color:var(--pink);margin:4px 0}
+.fxGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fxResult{margin-top:8px;background:#fff7fb;border:1px dashed #efbfd3;border-radius:10px;padding:10px;font-size:13px;font-weight:800;color:var(--deep)}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div>
+      <h1>✈️ KOREA TRIP 2027 💗</h1>
+      <div class="sub">Seoul × Busan · Couple Trip · Travel Film Planner</div>
+    </div>
+    <div class="badge">🌸 Pink Edition</div>
+  </div>
+  <nav id="tabs"></nav>
+</header>
+
+<main>
+<section class="view active" id="dashboard">
+
+  <div class="countdownHero">
+    <div class="countLabel">⏳ 距离韩国之旅还有</div>
+    <div class="countBig" id="countdown">—</div>
+    <div class="countMeta">出发：2027/03/02 23:15 · Kuala Lumpur → Seoul</div>
+
+    <div class="flightStrip">
+      <div>
+        <div class="flightCity">KUL</div>
+        <div class="flightTime">3/2 · 23:15</div>
+      </div>
+      <div class="plane">✈︎</div>
+      <div style="text-align:right">
+        <div class="flightCity">ICN</div>
+        <div class="flightTime">3/3 · 06:30</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid4">
+    <div class="card"><div class="small">旅行天数</div><div class="kpi">8D7N</div></div>
+    <div class="card"><div class="small">城市</div><div class="kpi">2</div></div>
+    <div class="card"><div class="small">行程完成</div><div class="kpi" id="dayProgressText">0/8</div></div>
+    <div class="card"><div class="small">摄影任务</div><div class="kpi" id="shotCount">0/12</div></div>
+  </div>
+
+  <h2 class="sectionTitle">今日准备进度</h2>
+  <div class="card">
+    <div class="priceRow"><span>整体准备</span><b id="overallPct">0%</b></div>
+    <div class="progress"><span id="overallBar"></span></div>
+  </div>
+
+  <h2 class="sectionTitle">每天行程推荐</h2>
+  <div id="dailyPreview"></div>
+
+  <h2 class="sectionTitle">这趟影片的故事线</h2>
+  <div class="card">
+    <h3>「从首尔快节奏，到釜山慢下来」</h3>
+    <div class="meta">凌晨机场开场 → 首尔清晨 → 宫殿与巷弄 → 圣水与汉江 → KTX 转场 → 釜山海边 → 广安里夜景高潮 → 回到首尔收尾。重点是城市节奏、情侣互动和真实旅行感。</div>
+  </div>
+</section>
+
+<section class="view" id="route">
+  <h2 class="sectionTitle">完整路线规划</h2>
+  <div id="routeList"></div>
+</section>
+
+<section class="view" id="camera">
+  <h2 class="sectionTitle">摄影素材库</h2>
+  <div id="cameraList"></div>
+</section>
+
+<section class="view" id="stay">
+  <h2 class="sectionTitle">住宿推荐 & 预算</h2>
+  <div class="card">
+    <div class="small">住宿预算（MYR）</div>
+    <input id="hotelBudget" type="text" placeholder="例如：RM 4,500">
+    <button class="saveBtn" onclick="saveField('hotelBudget')">保存预算</button>
+  </div>
+  <div id="stayList"></div>
+</section>
+
+<section class="view" id="food">
+  <h2 class="sectionTitle">必吃榜单</h2>
+  <div id="foodList"></div>
+</section>
+
+<section class="view" id="spots">
+  <h2 class="sectionTitle">打卡景点 & 小店</h2>
+  <div id="spotList"></div>
+</section>
+
+<section class="view" id="buy">
+  <h2 class="sectionTitle">必买榜单</h2>
+  <div id="buyList"></div>
+</section>
+
+<section class="view" id="budget">
+  <h2 class="sectionTitle">旅行预算</h2>
+
+  <div class="fxBox">
+    <div class="small">🇰🇷 韩元兑马币参考汇率 · 截至 2026/09/01 21:53 MYT</div>
+    <div class="fxRate">₩10,000 ≈ RM 29.45</div>
+    <div class="small">参考率：1 KRW ≈ RM 0.00294483。旅行前实际换汇会因银行 / money changer 点差与手续费不同。</div>
+    <div style="margin-top:12px" class="fxGrid">
+      <div>
+        <div class="small">KRW → MYR</div>
+        <input id="krwInput" type="text" inputmode="decimal" placeholder="例如 100000" oninput="convertKRW()">
+        <div class="fxResult" id="krwResult">RM —</div>
+      </div>
+      <div>
+        <div class="small">MYR → KRW</div>
+        <input id="myrInput" type="text" inputmode="decimal" placeholder="例如 500" oninput="convertMYR()">
+        <div class="fxResult" id="myrResult">₩ —</div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="small">自定义旅行换汇率（1 KRW = MYR）</div>
