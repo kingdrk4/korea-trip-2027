@@ -1,1 +1,30 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>✈️ KOREA TRIP 2027 💗</title><style>body{font-family:system-ui;background:#fff5fa;color:#5b3044;max-width:760px;margin:0 auto;padding:28px}main{background:#fff;border:1px solid #ffd0e2;border-radius:24px;padding:28px;box-shadow:0 12px 40px #d95b8d22}h1{color:#e94f8e}.btn{display:inline-block;padding:12px 18px;background:#ff5c9b;color:#fff;border-radius:12px;text-decoration:none;font-weight:700}.note{background:#fff0f7;padding:14px;border-radius:14px;margin:18px 0}</style></head><body><main><h1>✈️ KOREA TRIP 2027 💗</h1><p>Seoul × Busan · Couple Trip · Travel Film Planner</p><div class="note">网站部署通道已经建立。完整版 Couple Sync 正在接入这个公开站点。</div><p>出发：2027/03/02 23:15 · Kuala Lumpur → Seoul</p></main></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>✈️ KOREA TRIP 2027 💗</title>
+</head>
+<body>
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:24px;color:#7f2850">正在加载 Korea Trip 2027…</div>
+<script>
+Promise.all([
+  'parts/kt_part_01.txt',
+  'parts/kt_part_02.txt',
+  'parts/kt_part_03.txt',
+  'parts/kt_part_04.txt',
+  'parts/kt_part_05.txt',
+  'parts/kt_part_06.txt'
+].map(p=>fetch(p,{cache:'no-store'}).then(r=>{
+  if(!r.ok) throw new Error(p+' '+r.status);
+  return r.text();
+}))).then(parts=>{
+  document.open();
+  document.write(parts.join(''));
+  document.close();
+}).catch(err=>{
+  document.body.innerHTML='<div style="font-family:sans-serif;padding:24px;color:#b00020">加载失败：'+String(err)+'</div>';
+});
+</script>
+</body>
+</html>
