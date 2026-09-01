@@ -1,4 +1,63 @@
-村 → 三清洞 → 西村 → 光化门',
+  const r=await fetch(`${CLOUD_URL}/rest/v1/rpc/set_trip_state`,{method:'POST',headers:apiHeaders(),body:JSON.stringify({p_code:ROOM_CODE,p_value:localTripState()})});
+  if(!r.ok){if(r.status===401||r.status===403){nativeRemoveItem.call(localStorage,ROOM_KEY_STORAGE);ROOM_CODE='';cloudReady=false;lockScreen()}throw new Error('sync '+r.status)}
+  setSyncBadge('🔒 已安全同步','ok')
+ }catch(e){setSyncBadge('☁️ 同步失败','bad')}
+}
+function queueCloudWrite(){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudWrite,350)}
+Storage.prototype.setItem=function(k,v){nativeSetItem.call(this,k,v);if(this===localStorage&&isTripKey(k)&&cloudReady&&!cloudApplying)queueCloudWrite()}
+Storage.prototype.removeItem=function(k){nativeRemoveItem.call(this,k);if(this===localStorage&&isTripKey(k)&&cloudReady&&!cloudApplying)queueCloudWrite()}
+function setSyncBadge(t,cls=''){let b=document.getElementById('cloudSyncBadge');if(!b){b=document.createElement('div');b.id='cloudSyncBadge';b.style.cssText='position:fixed;right:12px;bottom:12px;z-index:9999;padding:8px 12px;border-radius:999px;background:#fff0f7;border:1px solid #f0bfd3;color:#a93d6b;font:700 11px system-ui;box-shadow:0 5px 20px #b25b7c22';document.body.appendChild(b)}b.textContent=t}
+async function cloudPull(first=false){
+ if(!ROOM_CODE){lockScreen();return}
+ try{
+  const r=await fetch(`${CLOUD_URL}/rest/v1/rpc/get_trip_state`,{method:'POST',headers:apiHeaders(),body:JSON.stringify({p_code:ROOM_CODE})});
+  if(r.status===401||r.status===403){nativeRemoveItem.call(localStorage,ROOM_KEY_STORAGE);ROOM_CODE='';cloudReady=false;lockScreen();return}
+  if(!r.ok)throw new Error('pull '+r.status);
+  const remote=(await r.json())||{}; const local=localTripState();
+  if(Object.keys(remote).length===0&&Object.keys(local).length){cloudReady=true;await cloudWrite();return}
+  if(stable(remote)!==stable(local)){
+   cloudApplying=true;
+   Object.keys(local).forEach(k=>nativeRemoveItem.call(localStorage,k));
+   Object.entries(remote).forEach(([k,v])=>nativeSetItem.call(localStorage,k,String(v)));
+   cloudApplying=false;
+   setSyncBadge('💗 收到另一台设备更新','ok');
+   setTimeout(()=>location.reload(),250); return;
+  }
+  cloudReady=true;setSyncBadge('🔒 私人双人同步已连接','ok');
+ }catch(e){cloudReady=false;setSyncBadge('☁️ 离线模式','bad')}
+}
+async function initPrivateSync(){
+ if(ROOM_CODE && await verifyRoomCode(ROOM_CODE)){await cloudPull(true)}
+ else{nativeRemoveItem.call(localStorage,ROOM_KEY_STORAGE);ROOM_CODE='';lockScreen()}
+}
+setTimeout(initPrivateSync,50);
+setInterval(()=>{if(ROOM_CODE)cloudPull(false)},5000);
+
+const tabs=[
+['dashboard','首页'],['route','行程'],['camera','摄影'],['stay','住宿'],['food','必吃'],['spots','景点/小店'],['buy','必买'],['budget','预算'],['checklist','Checklist'],['notes','备忘']
+];
+const nav=document.getElementById('tabs');
+tabs.forEach(([id,name],i)=>{
+ const b=document.createElement('button');
+ b.className='tab'+(i===0?' active':'');
+ b.textContent=name;
+ b.onclick=()=>{
+   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+   b.classList.add('active');
+   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+   document.getElementById(id).classList.add('active');
+ };
+ nav.appendChild(b);
+});
+
+const route=[
+{d:'DAY 1 · 3/3',city:'首尔',title:'落地首尔 · 轻松进入状态',
+plan:'ICN → 酒店放行李 → 益善洞 → 清溪川 → 明洞',
+rec:'推荐把第一天排轻一点。红眼航班落地后先补充体力，下午拍韩屋巷弄，晚上只安排明洞和便利店，不硬塞景点。',
+film:'机场行李箱低机位、AREX/巴士、第一口韩国食物、女友第一反应、夜间街灯。',
+schedule:[['06:30','抵达 ICN｜入境、取行李、简单整理'],['07:45','前往首尔市区｜AREX / 机场巴士'],['09:30','酒店寄放行李｜附近吃早餐或热汤'],['11:00','益善洞｜韩屋街、咖啡、小店、情侣街拍'],['13:00','午餐｜参鸡汤 / 韩式家常料理'],['14:30','清溪川｜散步 + 轻量 B-roll'],['16:00','回酒店 Check-in / 补眠 1–2 小时'],['19:00','明洞｜晚餐、Olive Young、街头小吃'],['21:00','便利店素材 + 回酒店休息']]},
+{d:'DAY 2 · 3/4',city:'首尔',title:'宫殿 × 韩屋 × 老城区',
+plan:'景福宫 → 北村 → 三清洞 → 西村 → 光化门',
 rec:'上午先拍景福宫，避开中午硬光；下午慢慢走三清洞和西村。情侣照集中在宫墙、巷子和咖啡店完成。',
 film:'宫门正中构图、韩服/宫墙长焦、北村背影、咖啡手部特写、傍晚光化门。',
 schedule:[['08:00','早餐｜酒店附近简单解决'],['09:00','景福宫｜主景点 + 宫墙人像'],['11:00','北村韩屋村｜安静巷弄跟拍'],['12:30','三清洞午餐'],['14:00','三清洞咖啡 / 小店'],['15:30','西村｜设计店、巷子、慢逛'],['17:30','光化门 / 广场｜等待蓝调时刻'],['19:00','正式韩牛 / 烤肉晚餐'],['21:00','自由散步 / 回酒店整理素材']]},
@@ -16,80 +75,4 @@ schedule:[['09:30','延南洞早餐 / 咖啡'],['10:30','延南洞散步｜小�
 plan:'首尔站 → KTX → 釜山 → 甘川文化村 → 南浦洞 / 札嘎其',
 rec:'KTX 本身就是影片转折。抵达后先拍釜山山城和老城区，让“首尔 → 港口城市”的差异更明显。',
 film:'车站时钟、车票/咖啡、窗外高速景色、釜山站 reveal、甘川彩色屋顶。',
-schedule:[['07:30','退房 → 首尔站'],['08:30','KTX 前往釜山｜车站/车票/窗外素材'],['11:15','抵达釜山｜酒店寄行李'],['12:00','猪肉汤饭｜釜山第一餐'],['13:30','甘川文化村｜彩色山城主镜头'],['16:30','南浦洞 / BIFF 广场'],['18:00','札嘎其 / 海鲜晚餐'],['20:00','夜间街拍后回酒店']]},
-{d:'DAY 6 · 3/8',city:'釜山',title:'海云台 × 青沙浦 × 广安里',
-plan:'海云台 → Blue Line / 青沙浦 → 广安里日落夜景',
-rec:'整趟旅行最重要的摄影日。天气好时不要塞别的景点，下午守青沙浦，日落前 60–90 分钟到广安里占机位。',
-film:'海浪慢镜、列车穿画、人物侧脸、蓝调时刻广安大桥、情侣剪影。',
-schedule:[['08:30','海云台早餐 / 海边散步'],['10:00','海云台主沙滩｜慢镜、人像'],['11:30','午餐 / 咖啡'],['13:00','前往 Blue Line / 青沙浦'],['14:00','青沙浦｜列车、海岸、咖啡'],['16:30','前往广安里'],['17:00','广安里占位｜等日落'],['18:00','蓝调时刻 + 广安大桥主镜头'],['20:00','广安里晚餐 / 夜景']]},
-{d:'DAY 7 · 3/9',city:'釜山→首尔',title:'白浅文化村 × 回首尔',
-plan:'白浅文化村 / 影岛 → 午后 KTX → 首尔最后一晚',
-rec:'早上只安排一个海边区域，不要贪多；午后回首尔，最后一晚安排一顿正式晚餐 + 补购物，旅程会更完整。',
-film:'海岸慢走、旁白、列车返程、最后一顿晚餐、收尾 montage。',
-schedule:[['08:00','早餐 + 退房 / 寄行李'],['09:00','白浅文化村 / 影岛｜海岸慢走'],['11:30','午餐｜釜山最后一餐'],['13:00','取行李 → 釜山站'],['14:00','KTX 回首尔'],['17:00','首尔酒店 Check-in'],['18:30','最后一顿正式晚餐'],['20:30','明洞 / 弘大补买伴手礼'],['22:00','打包 + 影片 ending 旁白']]},
-{d:'DAY 8 · 3/10',city:'返程',title:'首尔 → ICN → KUL',
-plan:'酒店 → ICN · 11:05 起飞',
-rec:'早上不排景点。提前去机场，把“旅行结束”的感觉拍完整，比多塞一个景点更适合影片结尾。',
-film:'收行李、酒店窗外、清晨街道、机场窗边、最终旁白。',
-schedule:[['06:30','起床 / 最后整理'],['07:00','退房 → 前往 ICN'],['08:30','抵达机场｜Check-in / 退税 / 早餐'],['09:30','机场最后 B-roll / 纪念品'],['10:15','前往登机口'],['11:05','ICN → KUL｜旅行结束']]}
-];
-
-function itemCard(id,title,desc,foot=''){
- const done=localStorage.getItem(id)==='1';
- return `<div class="card">
-   <div class="row">
-     <div class="check ${done?'done':''}" id="ck_${id}" onclick="toggle('${id}')">${done?'✓':''}</div>
-     <div class="grow">
-       <h3 id="tx_${id}" class="${done?'doneText':''}">${title}</h3>
-       <div class="meta">${desc}</div>
-       ${foot?`<div class="shot">${foot}</div>`:''}
-     </div>
-   </div>
- </div>`;
-}
-
-document.getElementById('routeList').innerHTML=route.map((x,i)=>`
-<div class="card day">
- <div class="time">${x.d} · ${x.city}</div>
- <div class="place">${x.title}</div>
- <div class="meta">${x.plan}</div>
- <div class="rec"><b>💡 当天推荐：</b>${x.rec}</div>
- <div class="shot">🎬 ${x.film}</div>
- <div class="dayDetails">
-   <button class="dayToggle" onclick="toggleDayDetail(${i})">🕒 查看 ${x.d} 详细时间表</button>
-   <div class="dayTimeline" id="timeline${i}">
-     ${x.schedule.map((s,j)=>{const noHeart=/起床|抵达 ICN|退房|前往首尔市区|前往 ICN|取行李|酒店寄放行李|酒店 Check-in|首尔酒店 Check-in|前往登机口/.test(s[1]);const hid='heart_'+i+'_'+j;const loved=localStorage.getItem(hid)==='1';return `<div class="timeSlot ${loved?'completed':''}"><div class="clock">${s[0]}</div><div class="what">${s[1]}</div>${noHeart?'':`<button class="heartCheck ${loved?'loved':''}" onclick="toggleHeart('${hid}',this)" aria-label="完成">${loved?'♥':'♡'}</button>`}</div>`}).join('')}
-   </div>
- </div>
- <div style="margin-top:10px">${itemCard('day'+i,'完成这一天','走完路线并完成主要摄影素材')}</div>
-</div>`).join('');
-
-function toggleDayDetail(i){
- const el=document.getElementById('timeline'+i);
- if(el) el.classList.toggle('open');
-}
-function toggleHeart(id,btn){const loved=localStorage.getItem(id)==='1';localStorage.setItem(id,loved?'0':'1');btn.classList.toggle('loved',!loved);btn.textContent=!loved?'♥':'♡';btn.closest('.timeSlot').classList.toggle('completed',!loved);}
-
-document.getElementById('dailyPreview').innerHTML=route.map((x,i)=>`
-<div class="card day">
- <div class="time">${x.d} · ${x.city}</div>
- <div class="place">${x.title}</div>
- <div class="meta">${x.plan}</div>
- <div class="rec">${x.rec}</div>
-</div>`).join('');
-
-const camera=[
-['首尔','ICN 开场','推行李箱低机位 + Arrival board','24mm wide · 5–7s'],
-['首尔','地铁转场','列车进站 + 门关闭 match cut','0.5x / 24fps'],
-['首尔','景福宫','宫门正中构图 + 人物走近','长焦 / slow motion'],
-['首尔','北村','巷子上坡背影','50–85mm · 安静拍摄'],
-['首尔','圣水','招牌 / 咖啡 / 手部细节','macro B-roll × 5'],
-['首尔','汉江','两人坐着聊天远景','固定机位 + 环境声'],
-['釜山','KTX','窗外高速景色 + 票/咖啡特写','transition sequence'],
-['釜山','甘川','彩色屋顶 reveal','wide → push in'],
-['釜山','海云台','海浪前景 + 人物侧面','60fps slow'],
-['釜山','青沙浦','列车穿过画面','固定机位'],
-['釜山','广安里','蓝调时刻广安大桥','锁曝光 · 10–15s'],
-['釜山','白浅文化村','悬崖小路跟拍','gimbal / 24mm']
-];
-document.getElementById('cameraList').innerHTML=camera.map((x,i)=>itemCard('cam'+
+schedule:[['07:30','退房 → 首尔站'],['08:30','KTX 前往釜山｜车站/车票/窗外素材'],['11:15','抵达釜山｜酒店寄行李'],['12:00','猪肉汤饭｜釜山第一餐'],['13:30','甘川文化村｜彩色山城主镜头'],['16:30',
