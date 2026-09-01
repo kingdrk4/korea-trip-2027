@@ -1,4 +1,12 @@
-kground:var(--pink);color:white;border:0;border-radius:10px;padding:10px 14px;
+px;text-decoration:none;font-weight:800;
+}
+input,textarea,select{
+  width:100%;border:1px solid var(--line);background:#fffafd;color:var(--text);
+  border-radius:12px;padding:10px;font:inherit;
+}
+textarea{min-height:120px}
+.saveBtn{
+  background:var(--pink);color:white;border:0;border-radius:10px;padding:10px 14px;
   font-weight:800;margin-top:8px;
 }
 .listLine{padding:10px 0;border-bottom:1px dashed #f1d2df}.listLine:last-child{border-bottom:0}
@@ -125,14 +133,4 @@ kground:var(--pink);color:white;border:0;border-radius:10px;padding:10px 14px;
     <div style="margin-top:12px" class="fxGrid">
       <div>
         <div class="small">KRW → MYR</div>
-        <input id="krwInput" type="text" inputmode="decimal" placeholder="例如 100000" oninput="convertKRW()">
-        <div class="fxResult" id="krwResult">RM —</div>
-      </div>
-      <div>
-        <div class="small">MYR → KRW</div>
-        <input id="myrInput" type="text" inputmode="decimal" placeholder="例如 500" oninput="convertMYR()">
-        <div class="fxResult" id="myrResult">₩ —</div>
-      </div>
-    </div>
-    <div style="margin-top:12px">
-      <div class="small">自定义旅行换汇率（1 KRW = MYR）</div>
+        <input id="krwInput"
