@@ -1,3 +1,14 @@
+ type="text" inputmode="decimal" placeholder="例如 100000" oninput="convertKRW()">
+        <div class="fxResult" id="krwResult">RM —</div>
+      </div>
+      <div>
+        <div class="small">MYR → KRW</div>
+        <input id="myrInput" type="text" inputmode="decimal" placeholder="例如 500" oninput="convertMYR()">
+        <div class="fxResult" id="myrResult">₩ —</div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="small">自定义旅行换汇率（1 KRW = MYR）</div>
       <input id="fxRateInput" type="text" inputmode="decimal" value="0.00294483" onchange="saveFxRate()">
       <div class="small" style="margin-top:6px">可以在出发前把 Money Changer / 银行的实际成交率填进来，预算换算会更准确。</div>
     </div>
@@ -28,70 +39,56 @@
 </section>
 </main>
 
-<div class="footer">行程、营业时间、预约与价格建议出发前 30 天再做最终核实 · 所有勾选/预算/备忘均保存在本机浏览器</div>
+<div class="footer">行程、营业时间、预约与价格建议出发前 30 天再做最终核实 · 所有勾选 / 预算 / 备忘均通过私人 Room Key 双人同步</div>
 
 <script>
 
-// ===== Couple Cloud Sync (Supabase) =====
+// ===== Couple Cloud Sync (Supabase) · PRIVATE ROOM LOCK =====
 const CLOUD_URL='https://fkcwqltkrmzxmxngajdu.supabase.co';
 const CLOUD_KEY='sb_publishable_6kTH8LJXzzOuLex2iFG8qg_t-f0JZD7';
-const CLOUD_ROW='shared';
+const ROOM_KEY_STORAGE='koreaTripPrivateRoomKey';
+let ROOM_CODE=localStorage.getItem(ROOM_KEY_STORAGE)||'';
 let cloudReady=false, cloudApplying=false, cloudTimer=null;
 const nativeSetItem=Storage.prototype.setItem;
 const nativeRemoveItem=Storage.prototype.removeItem;
 function isTripKey(k){return /^(day|cam|stay|food|buy|check|heart_|exp)/.test(k)||['tripNotes','hotelBudget','foodBudget','shopBudget','krwMyrRate'].includes(k)}
 function localTripState(){const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(isTripKey(k))o[k]=localStorage.getItem(k)}return o}
 function stable(o){return JSON.stringify(o,Object.keys(o).sort())}
-async function cloudWrite(){
- if(!cloudReady||cloudApplying)return;
- const body={id:CLOUD_ROW,value:localTripState(),updated_at:new Date().toISOString()};
- try{await fetch(`${CLOUD_URL}/rest/v1/korea_trip_state?on_conflict=id`,{method:'POST',headers:{apikey:CLOUD_KEY,Authorization:`Bearer ${CLOUD_KEY}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});setSyncBadge('☁️ 已同步','ok')}catch(e){setSyncBadge('☁️ 同步失败','bad')}
-}
-function queueCloudWrite(){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudWrite,350)}
-Storage.prototype.setItem=function(k,v){nativeSetItem.call(this,k,v);if(this===localStorage&&isTripKey(k)&&cloudReady&&!cloudApplying)queueCloudWrite()}
-Storage.prototype.removeItem=function(k){nativeRemoveItem.call(this,k);if(this===localStorage&&isTripKey(k)&&cloudReady&&!cloudApplying)queueCloudWrite()}
-function setSyncBadge(t,cls=''){let b=document.getElementById('cloudSyncBadge');if(!b){b=document.createElement('div');b.id='cloudSyncBadge';b.style.cssText='position:fixed;right:12px;bottom:12px;z-index:9999;padding:8px 12px;border-radius:999px;background:#fff0f7;border:1px solid #f0bfd3;color:#a93d6b;font:700 11px system-ui;box-shadow:0 5px 20px #b25b7c22';document.body.appendChild(b)}b.textContent=t}
-async function cloudPull(first=false){
+function apiHeaders(){return {apikey:CLOUD_KEY,Authorization:`Bearer ${CLOUD_KEY}`,'Content-Type':'application/json'}}
+async function verifyRoomCode(code){
  try{
-  const r=await fetch(`${CLOUD_URL}/rest/v1/korea_trip_state?id=eq.${CLOUD_ROW}&select=value,updated_at`,{headers:{apikey:CLOUD_KEY,Authorization:`Bearer ${CLOUD_KEY}`}});
-  const rows=await r.json(); const remote=rows?.[0]?.value||{}; const local=localTripState();
-  if(Object.keys(remote).length===0&&Object.keys(local).length){cloudReady=true;await cloudWrite();return}
-  if(stable(remote)!==stable(local)){
-   cloudApplying=true;
-   Object.keys(local).forEach(k=>nativeRemoveItem.call(localStorage,k));
-   Object.entries(remote).forEach(([k,v])=>nativeSetItem.call(localStorage,k,String(v)));
-   cloudApplying=false;
-   setSyncBadge('💗 收到另一台设备更新','ok');
-   setTimeout(()=>location.reload(),250); return;
-  }
-  cloudReady=true;setSyncBadge('☁️ 双人同步已连接','ok');
- }catch(e){cloudReady=true;setSyncBadge('☁️ 离线模式','bad')}
+  const r=await fetch(`${CLOUD_URL}/rest/v1/rpc/verify_trip_code`,{method:'POST',headers:apiHeaders(),body:JSON.stringify({p_code:code})});
+  if(!r.ok)return false;
+  return await r.json()===true;
+ }catch(e){return false}
 }
-setTimeout(()=>cloudPull(true),50);
-setInterval(()=>cloudPull(false),5000);
-
-const tabs=[
-['dashboard','首页'],['route','行程'],['camera','摄影'],['stay','住宿'],['food','必吃'],['spots','景点/小店'],['buy','必买'],['budget','预算'],['checklist','Checklist'],['notes','备忘']
-];
-const nav=document.getElementById('tabs');
-tabs.forEach(([id,name],i)=>{
- const b=document.createElement('button');
- b.className='tab'+(i===0?' active':'');
- b.textContent=name;
- b.onclick=()=>{
-   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-   b.classList.add('active');
-   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-   document.getElementById(id).classList.add('active');
- };
- nav.appendChild(b);
-});
-
-const route=[
-{d:'DAY 1 · 3/3',city:'首尔',title:'落地首尔 · 轻松进入状态',
-plan:'ICN → 酒店放行李 → 益善洞 → 清溪川 → 明洞',
-rec:'推荐把第一天排轻一点。红眼航班落地后先补充体力，下午拍韩屋巷弄，晚上只安排明洞和便利店，不硬塞景点。',
-film:'机场行李箱低机位、AREX/巴士、第一口韩国食物、女友第一反应、夜间街灯。',
-schedule:[['06:30','抵达 ICN｜入境、取行李、简单整理'],['07:45','前往首尔市区｜AREX / 机场巴士'],['09:30','酒店寄放行李｜附近吃早餐或热汤'],['11:00','益善洞｜韩屋街、咖啡、小店、情侣街拍'],['13:00','午餐｜参鸡汤 / 韩式家常料理'],['14:30','清溪川｜散步 + 轻量 B-roll'],['16:00','回酒店 Check-in / 补眠 1–2 小时'],['19:00','明洞｜晚餐、Olive Young、街头小吃'],['21:00','便利店素材 + 回酒店休息']]},
-{d:'DAY 2 · 3/4',city:'首尔',title:'宫殿 × 韩屋 × 老城区',
-plan:'景福宫 → 北
+function lockScreen(){
+ let old=document.getElementById('tripPrivateLock'); if(old) old.remove();
+ const d=document.createElement('div'); d.id='tripPrivateLock';
+ d.style.cssText='position:fixed;inset:0;z-index:100000;background:linear-gradient(160deg,#fff0f7,#ffe4f0 55%,#fff9fc);display:flex;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+ d.innerHTML=`<div style="width:min(420px,100%);background:#fff;border:1px solid #f2bfd3;border-radius:24px;padding:28px;box-shadow:0 24px 80px #9b3e6929;text-align:center">
+   <div style="font-size:36px;margin-bottom:8px">💗</div>
+   <div style="font-size:22px;font-weight:900;color:#8d315d">KOREA TRIP 2027</div>
+   <div style="margin:8px 0 20px;color:#a66b87;font-size:13px;line-height:1.6">私人情侣空间 · 输入你们的 Room Key 才能读取或修改共享行程。</div>
+   <input id="tripRoomCodeInput" type="password" autocomplete="current-password" placeholder="Room Key" style="box-sizing:border-box;width:100%;padding:14px 16px;border:1px solid #e8b2c9;border-radius:14px;font-size:16px;outline:none;background:#fffafd">
+   <button id="tripUnlockBtn" style="width:100%;margin-top:12px;padding:13px 16px;border:0;border-radius:14px;background:#c84f83;color:white;font-weight:800;font-size:15px;cursor:pointer">解锁我们的行程</button>
+   <div id="tripLockMsg" style="min-height:20px;margin-top:10px;color:#b03264;font-size:12px"></div>
+ </div>`;
+ document.body.appendChild(d);
+ const input=d.querySelector('#tripRoomCodeInput'), btn=d.querySelector('#tripUnlockBtn'), msg=d.querySelector('#tripLockMsg');
+ async function go(){
+   const code=input.value.trim(); if(!code){msg.textContent='请输入 Room Key';return}
+   btn.disabled=true;btn.textContent='验证中…';msg.textContent='';
+   const ok=await verifyRoomCode(code);
+   if(ok){
+     ROOM_CODE=code;nativeSetItem.call(localStorage,ROOM_KEY_STORAGE,code);d.remove();await cloudPull(true);
+   }else{
+     msg.textContent='Room Key 不正确';btn.disabled=false;btn.textContent='解锁我们的行程';input.select();
+   }
+ }
+ btn.onclick=go;input.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+ setTimeout(()=>input.focus(),50);
+}
+async function cloudWrite(){
+ if(!cloudReady||cloudApplying||!ROOM_CODE)return;
+ try{
