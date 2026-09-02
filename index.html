@@ -13,7 +13,7 @@ Promise.all([
 ].map(p=>fetch(p,{cache:'no-store'}).then(r=>{if(!r.ok) throw new Error(p+' '+r.status);return r.text()}))).then(parts=>{
   const html=parts.join('');
   const marker='</body>';
-  const addons='<script src="parts/v7_upgrade.js?v=2"><\/script><script src="parts/fx_live.js?v=1"><\/script><script src="parts/hero_weather.js?v=2"><\/script><script src="parts/media_upload.js?v=2"><\/script><script src="parts/xhs_fix.js?v=2"><\/script>';
+  const addons='<script src="parts/v7_upgrade.js?v=2"><\/script><script src="parts/fx_live.js?v=1"><\/script><script src="parts/hero_weather.js?v=2"><\/script><script src="parts/media_upload.js?v=2"><\/script><script src="parts/xhs_fix.js?v=2"><\/script><script src="parts/hanbok_addon.js?v=1"><\/script>';
   const upgraded=html.includes(marker)?html.replace(marker,addons+marker):html;
   document.open();document.write(upgraded);document.close();
 }).catch(err=>{document.body.innerHTML='<div style="font-family:sans-serif;padding:24px;color:#b00020">加载失败：'+String(err)+'</div>'});
